@@ -21,7 +21,7 @@ def lambda_handler(event, context):
     
     if request_type == "LaunchRequest":
         return build_response(
-            "Welcome to Battery Monitor. Ask me about your battery level.",
+            "Bem-vindo ao Monitor de Bateria. Pergunte-me sobre o nível da sua bateria.",
             has_display=has_display
         )
     
@@ -32,12 +32,12 @@ def lambda_handler(event, context):
             return get_battery_status(has_display)
         
         elif intent_name == "AMAZON.HelpIntent":
-            return build_response("You can ask me: what's my battery percentage?", has_display=has_display)
+            return build_response("Você pode me perguntar: qual é o percentual da minha bateria?", has_display=has_display)
         
         elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
-            return build_response("Goodbye!", should_end=True, has_display=has_display)
-    
-    return build_response("I didn't understand that. Please try again.", has_display=has_display)
+            return build_response("Adeus!", should_end=True, has_display=has_display)
+
+    return build_response("Não entendi isso. Por favor, tente novamente.", has_display=has_display)
 
 
 def get_access_token():
@@ -97,7 +97,7 @@ def get_battery_status(has_display=False):
 
         if not access_token:
             return build_response(
-                "Sorry, I couldn't connect to your inverter. Please check your credentials.",
+                "Desculpe, não consegui conectar ao seu inversor. Por favor, verifique suas credenciais.",
                 has_display=has_display
             )
 
@@ -122,7 +122,7 @@ def get_battery_status(has_display=False):
 
         if result.get('code') != '1000000' and not result.get('success'):
             return build_response(
-                "Sorry, I couldn't retrieve your battery data.",
+                "Desculpe, não consegui recuperar os dados da sua bateria.",
                 has_display=has_display
             )
 
@@ -166,12 +166,12 @@ def get_battery_status(has_display=False):
         grid_power = int(grid_power) if grid_power else 0
         consumption_power = int(consumption_power)
 
-        speech_text = f"Your home battery is at {battery_percent} percent."
+        speech_text = f"A bateria da sua casa está em {battery_percent} por cento."
 
         if battery_power > 50:
-            speech_text += f" Currently charging at {battery_power} watts."
+            speech_text += f" Está carregando em {battery_power} watts."
         elif battery_power < -50:
-            speech_text += f" Currently discharging at {abs(battery_power)} watts."
+            speech_text += f" Está descarregando em {abs(battery_power)} watts."
 
         return build_battery_response(
             speech_text=speech_text,
@@ -185,14 +185,14 @@ def get_battery_status(has_display=False):
         
     except requests.exceptions.Timeout:
         return build_response(
-            "Sorry, the request timed out. Please try again.",
+            "Desculpe, a requisição expirou. Por favor, tente novamente.",
             has_display=has_display
         )
-    
+
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Erro: {str(e)}")
         return build_response(
-            "Sorry, I encountered an error retrieving your battery status.",
+            "Desculpe, encontrei um erro ao recuperar o status da sua bateria.",
             has_display=has_display
         )
 
@@ -253,23 +253,23 @@ def get_battery_color(percent):
 def get_battery_status_text(percent):
     """Return status text based on battery level"""
     if percent >= 80:
-        return 'Fully Charged'
+        return 'Totalmente Carregado'
     elif percent >= 50:
-        return 'Good'
+        return 'Bom'
     elif percent >= 20:
-        return 'Medium'
+        return 'Médio'
     else:
-        return 'Low - Consider Charging'
+        return 'Baixo - Considere Carregar'
 
 
 def get_battery_state(power):
     """Return battery state based on power flow"""
     if power > 50:
-        return '⚡ Charging'
+        return '⚡ Carregando'
     elif power < -50:
-        return '🔋 Discharging'
+        return '🔋 Descarregando'
     else:
-        return '⏸️ Idle'
+        return '⏸️ Inativo'
 
 
 def get_apl_document():
@@ -301,7 +301,7 @@ def get_apl_document():
                                 # Title
                                 {
                                     'type': 'Text',
-                                    'text': 'Home Battery Status',
+                                    'text': 'Status da Bateria',
                                     'fontSize': '50dp',
                                     'fontWeight': 'bold',
                                     'color': '#FFFFFF'
@@ -403,7 +403,7 @@ def get_apl_document():
                                             'items': [
                                                 {
                                                     'type': 'Text',
-                                                    'text': '🔌 Grid',
+                                                    'text': '🔌 Rede',
                                                     'fontSize': '25dp',
                                                     'color': '#AAAAAA'
                                                 },
@@ -424,7 +424,7 @@ def get_apl_document():
                                             'items': [
                                                 {
                                                     'type': 'Text',
-                                                    'text': '🏠 Load',
+                                                    'text': '🏠 Consumo',
                                                     'fontSize': '25dp',
                                                     'color': '#AAAAAA'
                                                 },
