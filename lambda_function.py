@@ -20,10 +20,8 @@ def lambda_handler(event, context):
     has_display = 'Alexa.Presentation.APL' in event['context']['System']['device']['supportedInterfaces']
     
     if request_type == "LaunchRequest":
-        return build_response(
-            "Welcome to Battery Monitor. Ask me about your battery level.",
-            has_display=has_display
-        )
+        # Immediately fetch battery status when skill opens
+        return get_battery_status(has_display)
     
     elif request_type == "IntentRequest":
         intent_name = event['request']['intent']['name']
