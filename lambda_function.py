@@ -48,19 +48,25 @@ def get_access_token():
     current_time = int(time.time())
     if token_cache['access_token'] and token_cache['expires_at'] > current_time:
         return token_cache['access_token']
-    
+
     # Request new token
-    token_url = "https://api.deyecloud.com/v1.0/token"
-    
+    api_url = os.environ.get('DEYE_API_URL', 'https://eu1-developer.deyecloud.com/')
+    api_url = api_url.rstrip('/')  # Remove trailing slash for proper concatenation
+    app_id = os.environ.get('DEYE_APP_ID')
+    token_url = f"{api_url}/v1.0/account/token?appId={app_id}"
+
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
     payload = {
-        "appId": os.environ.get('DEYE_APP_ID'),
         "appSecret": os.environ.get('DEYE_APP_SECRET'),
         "email": os.environ.get('DEYE_EMAIL'),
         "password": os.environ.get('DEYE_PASSWORD_HASH')  # Must be SHA256 hash (lowercase)
     }
-    
+
     try:
-        response = requests.post(token_url, json=payload, timeout=10)
+        response = requests.post(token_url, headers=headers, json=payload, timeout=10)
         result = response.json()
         
         if result.get('code') == '0' or result.get('success'):
@@ -88,79 +94,85 @@ def get_battery_status(has_display=False):
     try:
         # Get access token
         access_token = get_access_token()
-        
+
         if not access_token:
             return build_response(
                 "Sorry, I couldn't connect to your inverter. Please check your credentials.",
                 has_display=has_display
             )
-        
-        # Get station data
-        station_url = "https://api.deyecloud.com/v1.0/device/station/query"
-        
+
+        # Get station data using the correct endpoint
+        api_url = os.environ.get('DEYE_API_URL', 'https://eu1-developer.deyecloud.com/')
+        api_url = api_url.rstrip('/')
+        station_url = f"{api_url}/v1.0/station/latest"
+
         headers = {
             'Authorization': f'Bearer {access_token}',
             'Content-Type': 'application/json'
         }
-        
+
         station_payload = {
             "stationId": int(os.environ.get('DEYE_STATION_ID'))
         }
-        
+
         response = requests.post(station_url, json=station_payload, headers=headers, timeout=10)
         result = response.json()
-        
+
         print(f"API Response: {result}")  # For debugging
-        
-        if result.get('code') != '0' and not result.get('success'):
+
+        if result.get('code') != '1000000' and not result.get('success'):
             return build_response(
                 "Sorry, I couldn't retrieve your battery data.",
                 has_display=has_display
             )
-        
-        # Extract battery data (adjust based on actual API response structure)
-        data = result.get('data', {})
-        
+
+        # Extract battery data from response (data is at top level, not nested)
         # Common field names in Deye API:
         battery_percent = (
-            data.get('batterySoc') or 
-            data.get('battery_soc') or 
-            data.get('batterySOC') or
+            result.get('batterySoc') or
+            result.get('battery_soc') or
+            result.get('batterySOC') or
             0
         )
-        
+
         battery_power = (
-            data.get('batteryPower') or 
-            data.get('battery_power') or 
+            result.get('batteryPower') or
+            result.get('battery_power') or
             0
         )
-        
+
         solar_power = (
-            data.get('generationPower') or 
-            data.get('generation_power') or
-            data.get('pvPower') or
+            result.get('generationPower') or
+            result.get('generation_power') or
+            result.get('pvPower') or
             0
         )
-        
+
         grid_power = (
-            data.get('gridPower') or
-            data.get('grid_power') or
+            result.get('gridPower') or
+            result.get('grid_power') or
             0
         )
-        
+
         consumption_power = (
-            data.get('consumptionPower') or
-            data.get('consumption_power') or
+            result.get('consumptionPower') or
+            result.get('consumption_power') or
             0
         )
-        
+
+        battery_percent = int(battery_percent)
+        battery_power = int(battery_power)
+        solar_power = int(solar_power)
+        grid_power = int(grid_power) if grid_power else 0
+        consumption_power = int(consumption_power)
+
         speech_text = f"Your home battery is at {battery_percent} percent."
-        
-        if battery_power > 0:
+
+        if battery_power > 50:
             speech_text += f" Currently charging at {battery_power} watts."
-        elif battery_power < 0:
+        elif battery_power < -50:
             speech_text += f" Currently discharging at {abs(battery_power)} watts."
-        
+
         return build_battery_response(
             speech_text=speech_text,
             battery_percent=battery_percent,
